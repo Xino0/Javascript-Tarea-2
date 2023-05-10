@@ -74,17 +74,28 @@ class Carrito {
         this.productos = [];
         this.categorias = [];
     }
-    /**
-     * función que agrega @{cantidad} de productos con @{sku} al carrito
-     */
+
+    // Funcion que elimina @{cantidad} de productos con @{sku} al stock
+    async eliminarProducto(sku, cantidad) {
+        console.log(`Eliminando ${cantidad} ${sku}`);
+        
+        // Llama a funcion para eliminar producto de el stock
+        await deleteProductBySku(sku, cantidad)
+        .then((prod) => {
+            console.log(`Se ha Eliminado: ${prod.nombre}, cantidad ${cantidad} ---> ${sku} del stock`)
+        })
+        .catch(error => console.log(error));
+    }
+    
+    // Función que agrega @{cantidad} de productos con @{sku} al carrito
     async agregarProducto(sku, cantidad) {
         console.log(`Agregando ${cantidad} ${sku}`);
 
         // Busco el producto en la "base de datos"
         const producto = await findProductBySku(sku).catch(error => console.log(error));
+
         if (producto) {
             console.log("Producto encontrado", producto);
-
             // Creo un producto nuevo
             const nuevoProducto = new ProductoEnCarrito(sku, producto.nombre, cantidad);
             // Revisa si el producto esta repetido en el carrito
@@ -128,17 +139,41 @@ function findProductBySku(sku) {
             if (foundProduct) {
                 resolve(foundProduct);
             } else {
-                reject(`Product ${sku} not found`);
+                reject(`FindProduct: Product ${sku} not found`);
             }
         }, 1500);
     });
 }
 
-async function main() {
+// Funcion que elimina del stock la cantidad pasada por parametros
+function deleteProductBySku(sku, cantidad) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            const foundProduct = productosDelSuper.find(product => product.sku === sku);
+            if (foundProduct && cantidad<foundProduct.stock) {
+                foundProduct.stock -= cantidad
+                resolve(foundProduct);
+            } else {
+                reject(`DeleteProduct: Product ${sku} not found`);
+            }
+        }, 1500);
+    })
+}
+
+
+function main() {
     const carrito = new Carrito();
-    carrito.agregarProducto('WE328NJ', 2);
-    carrito.agregarProducto('WE328NJ', 2);
-    carrito.agregarProducto('RT324GD', 2);
-    //carrito.agregarProducto('1234567', 2);
+    // Categoria (Higiene)
+    carrito.agregarProducto('WE328NJ', 2);  
+    // Produto repetido
+    carrito.agregarProducto('WE328NJ', 2); 
+    // Producto con otra categoria (limpieza)
+    carrito.agregarProducto('RT324GD', 2); 
+    // Producto no encontrado
+    carrito.agregarProducto('1234567', 2); 
+    // Eliminar producto del stock
+    carrito.eliminarProducto('WE328NJ1', 2);
+    // Imprime los productos actualizados
+    console.log(productosDelSuper);
 }
 main();
