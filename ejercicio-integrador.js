@@ -49,7 +49,6 @@ class Producto {
 
 }
 
-
 // Creo todos los productos que vende mi super
 const queso = new Producto('KS944RUR', 'Queso', 10, 'lacteos', 4);
 const gaseosa = new Producto('FN312PPE', 'Gaseosa', 5, 'bebidas');
@@ -63,7 +62,6 @@ const jabon = new Producto('WE328NJ', 'Jabon', 4, 'higiene', 3);
 // Genero un listado de productos. Simulando base de datos
 const productosDelSuper = [queso, gaseosa, cerveza, arroz, fideos, lavandina, shampoo, jabon];
 
-
 // Cada cliente que venga a mi super va a crear un carrito
 class Carrito {
     productos;      // Lista de productos agregados
@@ -76,7 +74,6 @@ class Carrito {
         this.productos = [];
         this.categorias = [];
     }
-
     /**
      * función que agrega @{cantidad} de productos con @{sku} al carrito
      */
@@ -84,15 +81,29 @@ class Carrito {
         console.log(`Agregando ${cantidad} ${sku}`);
 
         // Busco el producto en la "base de datos"
-        const producto = await findProductBySku(sku);
+        const producto = await findProductBySku(sku).catch(error => console.log(error));
+        if (producto) {
+            console.log("Producto encontrado", producto);
 
-        console.log("Producto encontrado", producto);
-
-        // Creo un producto nuevo
-        const nuevoProducto = new ProductoEnCarrito(sku, producto.nombre, cantidad);
-        this.productos.push(nuevoProducto);
-        this.precioTotal = this.precioTotal + (producto.precio * cantidad);
-        this.categorias.push(producto.categoria);
+            // Creo un producto nuevo
+            const nuevoProducto = new ProductoEnCarrito(sku, producto.nombre, cantidad);
+            // Revisa si el producto esta repetido en el carrito
+            if (this.productos.find(prod => prod.sku === sku)) {
+                console.log(`El producto: ${sku} se encuentra repetido `);
+                let indice = this.productos.findIndex(prod => prod.sku === sku);
+                this.productos[indice].cantidad += cantidad
+            } else {
+                this.productos.push(nuevoProducto);
+                if (!this.categorias.find(prod => prod.categoria === producto.categoria)) {
+                    this.categorias.push(producto.categoria);
+                }
+            }
+            // Suma el precio total
+            this.precioTotal = this.precioTotal + (producto.precio * cantidad);
+        }
+        // Imprime categorias y precio total
+        console.log(this.categorias)
+        console.log(this.precioTotal)
     }
 }
 
@@ -107,7 +118,6 @@ class ProductoEnCarrito {
         this.nombre = nombre;
         this.cantidad = cantidad;
     }
-
 }
 
 // Función que busca un producto por su sku en "la base de datos"
@@ -124,5 +134,11 @@ function findProductBySku(sku) {
     });
 }
 
-const carrito = new Carrito();
-carrito.agregarProducto('WE328NJ', 2);
+async function main() {
+    const carrito = new Carrito();
+    carrito.agregarProducto('WE328NJ', 2);
+    carrito.agregarProducto('WE328NJ', 2);
+    carrito.agregarProducto('RT324GD', 2);
+    //carrito.agregarProducto('1234567', 2);
+}
+main();
